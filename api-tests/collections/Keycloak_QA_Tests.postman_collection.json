@@ -9,7 +9,7 @@
   },
   "item": [
     {
-      "name": "US-001: User Authentication - Get Access and Refresh Tokens",
+      "name": "API-01: Get access token with valid admin credentials",
       "event": [
         {
           "listen": "test",
@@ -98,7 +98,98 @@
       "response": []
     },
     {
-      "name": "US-002: Token Refresh",
+      "name": "API-02: Invalid login should not return token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();\r",
+              "pm.test(\"POST request to /realms/master/protocol/openid-connect/token returns status code 401 Unauthorized\", function () {\r",
+              "  pm.response.to.have.status(401);\r",
+              "  });\r",
+              "pm.test(\"JSON response body has property 'error'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error\");\r",
+              "  });\r",
+              "pm.test(\"JSON response body has property 'error_description'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error_description\"); \r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error' contains correct value\", function () {\r",
+              "    pm.expect(json.error).to.contain(\"invalid_grant\");\r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error_description' contains correct value\", function () {\r",
+              "    pm.expect(json.error_description).to.contain(\"Invalid user credentials\"); \r",
+              "  });\r",
+              "  \r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "client_id",
+              "value": "{{client_id}}",
+              "type": "text",
+              "uuid": "aec7318f-5458-4cf7-9ae5-7e5054325d2a"
+            },
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text",
+              "uuid": "14573c9d-a3fe-47b8-bd56-4dd2efa6389e"
+            },
+            {
+              "key": "username",
+              "value": "admin",
+              "type": "text",
+              "uuid": "09f1c031-c856-4342-9b1d-77a2f4872e4f"
+            },
+            {
+              "key": "password",
+              "value": "invalid",
+              "type": "text",
+              "uuid": "2b226fef-51a3-4493-aca3-70e614513b13"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "API-03: Refresh token returns new access token",
       "event": [
         {
           "listen": "test",
@@ -110,7 +201,6 @@
               "  pm.response.to.have.status(200);\r",
               "  });\r",
               "pm.test(\"Refresh token from previous request stored as an environment variable is not empty or missing\", function () {\r",
-              "\r",
               "  pm.expect(rt, \"refresh_token is empty/missing\").to.be.ok;\r",
               "});\r",
               "\r",
@@ -177,7 +267,87 @@
       "response": []
     },
     {
-      "name": "PK-003: Get Realm Public Key",
+      "name": "API-04: Invalid refresh token should fail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();\r",
+              "pm.test(\"POST request to /realms/master/protocol/openid-connect/token returns status code 400 Bad Request\", function () {\r",
+              "  pm.response.to.have.status(400);\r",
+              "  });\r",
+              "\r",
+              "pm.test(\"JSON response body has property 'error'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error\");\r",
+              "  });\r",
+              "pm.test(\"JSON response body has property 'error_description'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error_description\"); \r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error' contains correct value\", function () {\r",
+              "    pm.expect(json.error).to.contain(\"invalid_grant\");\r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error_description' contains correct value\", function () {\r",
+              "    pm.expect(json.error_description).to.contain(\"Invalid refresh token\"); \r",
+              "  });\r",
+              "pm.test(\"JSON response body does not have property 'refresh_token'\", function () {\r",
+              "    pm.expect(json).to.not.have.property(\"refresh_token\");\r",
+              "  });  \r",
+              "  pm.test(\"JSON response body does not have property 'access_token'\", function () {\r",
+              "    pm.expect(json).to.not.have.property(\"access_token\");\r",
+              "  });  \r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "refresh_token",
+              "type": "text",
+              "uuid": "36854ec7-47f1-4250-8097-30bd63e33a91"
+            },
+            {
+              "key": "client_id",
+              "value": "{{client_id}}",
+              "type": "text",
+              "uuid": "9768ebf0-1d4f-45ed-b3b7-f14c76184065"
+            },
+            {
+              "key": "refresh_token",
+              "value": "invalid",
+              "type": "text",
+              "uuid": "4665009b-ba00-4e37-b0b3-247e72eebe17"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "API-11: Get Realm Public Key",
       "event": [
         {
           "listen": "test",
@@ -241,7 +411,7 @@
       "response": []
     },
     {
-      "name": "BU-004: Bad URL - Incomplete Endpoint",
+      "name": "API-12: Bad URL - Incomplete Endpoint",
       "event": [
         {
           "listen": "test",
