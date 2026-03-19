@@ -1,5 +1,14 @@
 # PostgreSQL connection helper
+
 import os
+from dotenv import load_dotenv
+
+# --- LOAD .env CORRECTLY ---
+# Automatically loads .env from the db-tests/ directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, "..", ".env")
+load_dotenv(env_path)
+
 print("DB CONNECT:", os.getenv("PGHOST"), os.getenv("PGPORT"), os.getenv("PGDATABASE"), os.getenv("PGUSER"))
 import psycopg
 from psycopg.rows import dict_row
