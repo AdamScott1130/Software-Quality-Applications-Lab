@@ -33,3 +33,20 @@ def create_user(username: str, email: str | None = None, enabled: bool = True):
     if r.status_code not in (201, 409):
         raise RuntimeError(f"Create user failed: {r.status_code} {r.text}")
     return r.status_code
+
+def reset_user_password(base_url: str, realm: str, user_id: str, admin_token: str, password: str, temporary: bool = False) -> None:
+    """
+    Set/reset a user's password via Keycloak Admin API.
+    Used only for test setup (DB assertions are separate).
+    """
+    base = base_url.rstrip("/")
+    url = f"{base}/admin/realms/{realm}/users/{user_id}/reset-password"
+
+    payload = {"type": "password", "value": password, "temporary": temporary}
+    headers = {
+        "Authorization": f"Bearer {admin_token}",
+        "Content-Type": "application/json",
+    }
+
+    r = requests.put(url, json=payload, headers=headers, timeout=20)
+    r.raise_for_status()
