@@ -3,7 +3,7 @@ import os
 import requests
 
 def base_url():
-    return os.getenv("KEYCLOAK_BASE_URL", "http://localhost:8081").rstrip("/")
+    return os.getenv("KEYCLOAK_BASE_URL", "http://localhost:8080").rstrip("/")
 
 def get_admin_token():
     realm = os.getenv("KEYCLOAK_REALM", "master")
