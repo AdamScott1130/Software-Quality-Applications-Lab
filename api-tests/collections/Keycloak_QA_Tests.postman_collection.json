@@ -462,6 +462,61 @@
       "response": []
     },
     {
+      "name": "API-07: Set password for created user",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"PUT request to /admin/realms/master/users returns status code 204 No Content\", function () {\r",
+              "  pm.response.to.have.status(204);\r",
+              "  });\r",
+              "pm.test(\"Response body is empty\", function () {\r",
+              "  pm.expect(pm.response.text().length).to.equal(0);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"type\":\"password\", \r\n    \"value\":\"Password123!\", \r\n    \"temporary\":\"false\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}/reset-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "realms",
+            "{{realm}}",
+            "users",
+            "{{user_id}}",
+            "reset-password"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "API-14: Delete User Via Admin API",
       "event": [
         {
