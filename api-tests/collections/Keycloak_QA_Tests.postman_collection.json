@@ -28,9 +28,7 @@
               "\r",
               "// store for next requests\r",
               "pm.environment.set(\"access_token\", json.access_token);\r",
-              "pm.environment.set(\"refresh_token\", json.refresh_token);\r",
-              "\r",
-              "console.log(\"Saved refresh_token (first 20 chars):\", (json.refresh_token || \"\").slice(0, 20));"
+              "pm.environment.set(\"refresh_token\", json.refresh_token);"
             ],
             "type": "text/javascript",
             "packages": {},
@@ -573,18 +571,33 @@
       "response": []
     },
     {
-      "name": "API-14: Delete User Via Admin API",
+      "name": "API-09 - User token/claims reflect assigned role",
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test(\"DELETE request to /admin/realms/master/users/{user_id} returns response 204 No Content\", function () {\r",
-              "  pm.response.to.have.status(204);\r",
+              "const json = pm.response.json();\r",
+              "pm.test(\"POST request to /realms/master/protocol/openid-connect/token returns status code 200 OK\", function () {\r",
+              "  pm.response.to.have.status(200);\r",
               "  });\r",
-              "pm.test(\"JSON response body is empty\", function () {\r",
-              "  pm.expect(pm.response.text().length).to.equal(0);\r",
-              "});"
+              "pm.test(\"JSON response body has property 'access_token'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"access_token\");\r",
+              "  });\r",
+              "\r",
+              "// store for decoding\r",
+              "pm.environment.set(\"apitest_user_01_access_token\", json.access_token);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
             ],
             "type": "text/javascript",
             "packages": {},
@@ -593,29 +606,48 @@
         }
       ],
       "request": {
-        "method": "DELETE",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "bearer {{access_token}}",
-            "type": "text"
-          }
-        ],
+        "method": "POST",
+        "header": [],
         "body": {
-          "mode": "raw",
-          "raw": ""
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "client_id",
+              "value": "{{client_id}}",
+              "type": "text",
+              "uuid": "aec7318f-5458-4cf7-9ae5-7e5054325d2a"
+            },
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text",
+              "uuid": "14573c9d-a3fe-47b8-bd56-4dd2efa6389e"
+            },
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "text",
+              "uuid": "09f1c031-c856-4342-9b1d-77a2f4872e4f"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "text",
+              "uuid": "2b226fef-51a3-4493-aca3-70e614513b13"
+            }
+          ]
         },
         "url": {
-          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}",
+          "raw": "{{base_url}}/realms/{{realm}}/protocol/openid-connect/token",
           "host": [
             "{{base_url}}"
           ],
           "path": [
-            "admin",
             "realms",
             "{{realm}}",
-            "users",
-            "{{user_id}}"
+            "protocol",
+            "openid-connect",
+            "token"
           ]
         }
       },
@@ -754,6 +786,55 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "API-13: Delete User Via Admin API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"DELETE request to /admin/realms/master/users/{user_id} returns response 204 No Content\", function () {\r",
+              "  pm.response.to.have.status(204);\r",
+              "  });\r",
+              "pm.test(\"JSON response body is empty\", function () {\r",
+              "  pm.expect(pm.response.text().length).to.equal(0);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "realms",
+            "{{realm}}",
+            "users",
+            "{{user_id}}"
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "event": [
@@ -815,6 +896,14 @@
     },
     {
       "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "apitest_user_01_access_token",
       "value": ""
     }
   ]
