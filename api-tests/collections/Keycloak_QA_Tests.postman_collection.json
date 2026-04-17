@@ -571,7 +571,7 @@
       "response": []
     },
     {
-      "name": "API-09 - User token/claims reflect assigned role",
+      "name": "API-09: User token/claims reflect assigned role",
       "event": [
         {
           "listen": "test",
@@ -584,9 +584,13 @@
               "pm.test(\"JSON response body has property 'access_token'\", function () {\r",
               "    pm.expect(json).to.have.property(\"access_token\");\r",
               "  });\r",
+              "pm.test(\"JSON response body has property 'refresh_token'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"refresh_token\");\r",
+              "  });\r",
               "\r",
-              "// store for decoding\r",
-              "pm.environment.set(\"apitest_user_01_access_token\", json.access_token);"
+              "// store for later use\r",
+              "pm.environment.set(\"apitest_user_01_access_token\", json.access_token);\r",
+              "pm.environment.set(\"apitest_user_01_refresh_token\", json.refresh_token);"
             ],
             "type": "text/javascript",
             "packages": {},
@@ -654,17 +658,17 @@
       "response": []
     },
     {
-      "name": "API-11: Get Realm Public Key",
+      "name": "API-10.1: Logout invalidates refresh token",
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test(\"GET request to /realms/master returns status code 200 OK\", function() {\r",
-              "    pm.response.to.have.status(200);\r",
-              "});\r",
-              "pm.test(\"Response Body includes JSON property 'public_key'\", function() {\r",
-              "    pm.expect(pm.response.json()).to.have.property(\"public_key\");\r",
+              "pm.test(\"POST request to /admin/realms/master/users/{user_id}/logout using access token from API-03 returns status code 204 No Content\", function () {\r",
+              "  pm.response.to.have.status(204);\r",
+              "  });\r",
+              "pm.test(\"Response body is empty\", function () {\r",
+              "  pm.expect(pm.response.text().length).to.equal(0);\r",
               "});"
             ],
             "type": "text/javascript",
@@ -674,44 +678,172 @@
         }
       ],
       "protocolProfileBehavior": {
-        "disableBodyPruning": true
+        "disabledSystemHeaders": {}
       },
       "request": {
-        "method": "GET",
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "client_id",
+            "value": "{{client_id}}",
+            "type": "text"
+          },
+          {
+            "key": "refresh_token",
+            "value": "{{refresh_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": []
+        },
+        "url": {
+          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "realms",
+            "{{realm}}",
+            "users",
+            "{{user_id}}",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "API-10.2: Logout invalidates refresh token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();\r",
+              "pm.test(\"POST request to /realms/master/protocol/openid-connect/token using logged-out refresh token returns status code 400 Bad Request\", function () {\r",
+              "  pm.response.to.have.status(400);\r",
+              "  });\r",
+              "\r",
+              "pm.test(\"JSON response body has property 'error'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error\");\r",
+              "  });\r",
+              "pm.test(\"JSON response body has property 'error_description'\", function () {\r",
+              "    pm.expect(json).to.have.property(\"error_description\"); \r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error' contains correct value\", function () {\r",
+              "    pm.expect(json.error).to.contain(\"invalid_grant\");\r",
+              "  });\r",
+              "pm.test(\"JSON response property 'error_description' contains correct value\", function () {\r",
+              "    pm.expect(json.error_description).to.contain(\"Session not active\"); \r",
+              "  });\r",
+              "pm.test(\"JSON response body does not have property 'refresh_token'\", function () {\r",
+              "    pm.expect(json).to.not.have.property(\"refresh_token\");\r",
+              "  });  \r",
+              "  pm.test(\"JSON response body does not have property 'access_token'\", function () {\r",
+              "    pm.expect(json).to.not.have.property(\"access_token\");\r",
+              "  });  \r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
         "header": [],
         "body": {
           "mode": "urlencoded",
           "urlencoded": [
             {
+              "key": "grant_type",
+              "value": "refresh_token",
+              "type": "text",
+              "uuid": "36854ec7-47f1-4250-8097-30bd63e33a91"
+            },
+            {
               "key": "client_id",
               "value": "{{client_id}}",
-              "type": "text"
+              "type": "text",
+              "uuid": "9768ebf0-1d4f-45ed-b3b7-f14c76184065"
             },
             {
-              "key": "grant_type",
-              "value": "password",
-              "type": "text"
-            },
-            {
-              "key": "username",
-              "value": "admin",
-              "type": "text"
-            },
-            {
-              "key": "password",
-              "value": "admin",
-              "type": "text"
+              "key": "refresh_token",
+              "value": "{{apitest_user_01_refresh_token}}",
+              "type": "text",
+              "uuid": "4665009b-ba00-4e37-b0b3-247e72eebe17"
             }
           ]
         },
         "url": {
-          "raw": "{{base_url}}/realms/{{realm}}",
+          "raw": "{{base_url}}/realms/{{realm}}/protocol/openid-connect/token",
           "host": [
             "{{base_url}}"
           ],
           "path": [
             "realms",
-            "{{realm}}"
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "API-11: Delete User Via Admin API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"DELETE request to /admin/realms/master/users/{user_id} returns response 204 No Content\", function () {\r",
+              "  pm.response.to.have.status(204);\r",
+              "  });\r",
+              "pm.test(\"JSON response body is empty\", function () {\r",
+              "  pm.expect(pm.response.text().length).to.equal(0);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "admin",
+            "realms",
+            "{{realm}}",
+            "users",
+            "{{user_id}}"
           ]
         }
       },
@@ -788,17 +920,17 @@
       "response": []
     },
     {
-      "name": "API-13: Delete User Via Admin API",
+      "name": "API-13: Get Realm Public Key",
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test(\"DELETE request to /admin/realms/master/users/{user_id} returns response 204 No Content\", function () {\r",
-              "  pm.response.to.have.status(204);\r",
-              "  });\r",
-              "pm.test(\"JSON response body is empty\", function () {\r",
-              "  pm.expect(pm.response.text().length).to.equal(0);\r",
+              "pm.test(\"GET request to /realms/master returns status code 200 OK\", function() {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "pm.test(\"Response Body includes JSON property 'public_key'\", function() {\r",
+              "    pm.expect(pm.response.json()).to.have.property(\"public_key\");\r",
               "});"
             ],
             "type": "text/javascript",
@@ -807,30 +939,45 @@
           }
         }
       ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
       "request": {
-        "method": "DELETE",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "bearer {{access_token}}",
-            "type": "text"
-          }
-        ],
+        "method": "GET",
+        "header": [],
         "body": {
-          "mode": "raw",
-          "raw": ""
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "client_id",
+              "value": "{{client_id}}",
+              "type": "text"
+            },
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "admin",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "admin",
+              "type": "text"
+            }
+          ]
         },
         "url": {
-          "raw": "{{base_url}}/admin/realms/{{realm}}/users/{{user_id}}",
+          "raw": "{{base_url}}/realms/{{realm}}",
           "host": [
             "{{base_url}}"
           ],
           "path": [
-            "admin",
             "realms",
-            "{{realm}}",
-            "users",
-            "{{user_id}}"
+            "{{realm}}"
           ]
         }
       },
@@ -904,6 +1051,10 @@
     },
     {
       "key": "apitest_user_01_access_token",
+      "value": ""
+    },
+    {
+      "key": "apitest_user_01_refresh_token",
       "value": ""
     }
   ]
