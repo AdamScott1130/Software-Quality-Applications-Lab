@@ -47,7 +47,7 @@ def admin_token():
     url = f"{base}/realms/master/protocol/openid-connect/token"
 
     data = {
-        "grant_type": "password",
+        "grant_type": "password",#this is what triggers keycloak to wsrite a session
         "client_id": "admin-cli",
         "username": _env("KEYCLOAK_ADMIN_USER"),
         "password": _env("KEYCLOAK_ADMIN_PASSWORD"),
